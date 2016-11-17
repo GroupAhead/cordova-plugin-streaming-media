@@ -30,7 +30,7 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 	if (![options isKindOfClass:[NSNull class]] && [options objectForKey:@"shouldAutoClose"]) {
 		shouldAutoClose = [[options objectForKey:@"shouldAutoClose"] boolValue];
 	} else {
-		shouldAutoClose = true;
+		shouldAutoClose = false;
 	}
 	if (![options isKindOfClass:[NSNull class]] && [options objectForKey:@"bgColor"]) {
 		[self setBackgroundColor:[options objectForKey:@"bgColor"]];
