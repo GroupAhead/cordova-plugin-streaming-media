@@ -143,10 +143,7 @@ public class SimpleVideoStream extends Activity implements
 	}
 
 	public void onCompletion(MediaPlayer mp) {
-		stop();
-		if (mShouldAutoClose) {
-			wrapItUp(RESULT_OK, null);
-		}
+		Log.i(TAG, "Playback done");
 	}
 
 	public boolean onError(MediaPlayer mp, int what, int extra) {
