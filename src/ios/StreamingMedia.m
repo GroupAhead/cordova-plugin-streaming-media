@@ -274,13 +274,11 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 							removeObserver:self
 									  name:MPMoviePlayerWillExitFullscreenNotification
 									object:nil];
-    
 	// Remove playback finished listener
 	[[NSNotificationCenter defaultCenter]
 							removeObserver:self
 									  name:MPMoviePlayerPlaybackDidFinishNotification
 									object:moviePlayer];
-    
 	// Remove orientation change listener
 	[[NSNotificationCenter defaultCenter]
 							removeObserver:self
