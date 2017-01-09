@@ -62,7 +62,12 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 			backgroundColor = [UIColor blackColor];
 		}
 	}
-	// No specific options for video yet
+    
+    // Listen for click on the "Done" button
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(doneButtonClick:)
+                                                 name:MPMoviePlayerWillExitFullscreenNotification
+                                               object:nil];
 }
 
 -(void)play:(CDVInvokedUrlCommand *) command type:(NSString *) type {
@@ -200,11 +205,7 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 											 selector:@selector(moviePlayBackDidFinish:)
 												 name:MPMoviePlayerPlaybackDidFinishNotification
 											   object:moviePlayer];
-	// Listen for click on the "Done" button
-	[[NSNotificationCenter defaultCenter] addObserver:self
-											 selector:@selector(doneButtonClick:)
-												 name:MPMoviePlayerWillExitFullscreenNotification
-											   object:nil];
+
 	// Listen for orientation change
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(orientationChanged:)
