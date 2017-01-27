@@ -18,7 +18,7 @@
     BOOL shouldAutoClose;
     UIColor *backgroundColor;
     UIImageView *imageView;
-    BOOL *initFullscreen;
+    BOOL initFullscreen;
 }
 
 NSString * const TYPE_VIDEO = @"VIDEO";
@@ -199,6 +199,7 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
     NSURL *url = [NSURL URLWithString:uri];
     
     moviePlayer =  [[MPMoviePlayerController alloc] initWithContentURL:url];
+    [moviePlayer setControlStyle:MPMovieControlStyleFullscreen];
     [moviePlayer.view setTranslatesAutoresizingMaskIntoConstraints:NO];
     
     // Listen for playback finishing
@@ -212,8 +213,6 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
                                              selector:@selector(orientationChanged:)
                                                  name:UIDeviceOrientationDidChangeNotification
                                                object:nil];
-    
-    moviePlayer.controlStyle = MPMovieControlStyleDefault;
     
     moviePlayer.shouldAutoplay = YES;
     if (imageView != nil) {
