@@ -207,6 +207,14 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
                                              selector:@selector(moviePlayBackDidFinish:)
                                                  name:MPMoviePlayerPlaybackDidFinishNotification
                                                object:moviePlayer];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(moviePlayBackDidFinish:)
+                                                 name:MPMoviePlayerDidExitFullscreenNotification
+                                               object:moviePlayer];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(moviePlayBackDidFinish:)
+                                                 name:MPMoviePlayerWillExitFullscreenNotification
+                                               object:moviePlayer];
     
     // Listen for orientation change
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -271,20 +279,25 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
     backgroundColor = nil;
     
     // Remove Done Button listener
-    [[NSNotificationCenter defaultCenter]
-     removeObserver:self
-     name:MPMoviePlayerWillExitFullscreenNotification
-     object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:MPMoviePlayerWillExitFullscreenNotification
+                                                  object:nil];
+    
     // Remove playback finished listener
-    [[NSNotificationCenter defaultCenter]
-     removeObserver:self
-     name:MPMoviePlayerPlaybackDidFinishNotification
-     object:moviePlayer];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:MPMoviePlayerPlaybackDidFinishNotification
+                                                  object:moviePlayer];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:MPMoviePlayerDidExitFullscreenNotification
+                                                  object:moviePlayer];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:MPMoviePlayerWillExitFullscreenNotification
+                                                  object:moviePlayer];
+    
     // Remove orientation change listener
-    [[NSNotificationCenter defaultCenter]
-     removeObserver:self
-     name:UIDeviceOrientationDidChangeNotification
-     object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:UIDeviceOrientationDidChangeNotification
+                                                  object:nil];
     
     if (moviePlayer) {
         moviePlayer.fullscreen = NO;
