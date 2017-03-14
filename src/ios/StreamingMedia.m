@@ -254,15 +254,13 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
     }
     
     [self cleanup];
-    if (shouldAutoClose || [errorMsg length] != 0) {
-        CDVPluginResult* pluginResult;
-        if ([errorMsg length] != 0) {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMsg];
-        } else {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
-        }
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
+    CDVPluginResult* pluginResult;
+    if ([errorMsg length] != 0) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMsg];
+    } else {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
     }
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
 
 -(void)doneButtonClick:(NSNotification*)notification{
