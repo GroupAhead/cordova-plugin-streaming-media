@@ -62,12 +62,6 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
             backgroundColor = [UIColor blackColor];
         }
     }
-    
-    // Listen for click on the "Done" button
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(doneButtonClick:)
-                                                 name:MPMoviePlayerWillExitFullscreenNotification
-                                               object:nil];
 }
 
 -(void)play:(CDVInvokedUrlCommand *) command type:(NSString *) type {
