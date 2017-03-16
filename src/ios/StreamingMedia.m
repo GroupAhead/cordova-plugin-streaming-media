@@ -247,14 +247,16 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
         NSLog(@"Playback failed: %@", errorMsg);
     }
     
-    [self cleanup];
-    CDVPluginResult* pluginResult;
-    if ([errorMsg length] != 0) {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMsg];
-    } else {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
+    if (shouldAutoClose || [errorMsg length] != 0) {
+        [self cleanup];
+        CDVPluginResult* pluginResult;
+        if ([errorMsg length] != 0) {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMsg];
+        } else {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
+        }
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
     }
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
 
 - (void)cleanup {
