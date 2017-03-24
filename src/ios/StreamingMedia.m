@@ -2,6 +2,8 @@
 #import <Cordova/CDV.h>
 
 @interface StreamingMedia()
+@property(strong, nonatomic) MPMoviePlayerController *moviePlayer;
+
 - (void)parseOptions:(NSDictionary *) options type:(NSString *) type;
 - (void)play:(CDVInvokedUrlCommand *) command type:(NSString *) type;
 - (void)setBackgroundColor:(NSString *)color;
@@ -14,12 +16,13 @@
 
 @implementation StreamingMedia {
     NSString* callbackId;
-    MPMoviePlayerController *moviePlayer;
     BOOL shouldAutoClose;
     UIColor *backgroundColor;
     UIImageView *imageView;
     BOOL initFullscreen;
 }
+
+@synthesize moviePlayer = _moviePlayer;
 
 NSString * const TYPE_VIDEO = @"VIDEO";
 NSString * const TYPE_AUDIO = @"AUDIO";
@@ -74,22 +77,22 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 
 -(void)pause:(CDVInvokedUrlCommand *) command type:(NSString *) type {
     callbackId = command.callbackId;
-    if (moviePlayer) {
-        [moviePlayer pause];
+    if (_moviePlayer) {
+        [_moviePlayer pause];
     }
 }
 
 -(void)resume:(CDVInvokedUrlCommand *) command type:(NSString *) type {
     callbackId = command.callbackId;
-    if (moviePlayer) {
-        [moviePlayer play];
+    if (_moviePlayer) {
+        [_moviePlayer play];
     }
 }
 
 -(void)stop:(CDVInvokedUrlCommand *) command type:(NSString *) type {
     callbackId = command.callbackId;
-    if (moviePlayer) {
-        [moviePlayer stop];
+    if (_moviePlayer) {
+        [_moviePlayer stop];
     }
 }
 
@@ -161,8 +164,8 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 - (void)orientationChanged:(NSNotification *)notification {
     if (imageView != nil) {
         // adjust imageView for rotation
-        imageView.bounds = moviePlayer.backgroundView.bounds;
-        imageView.frame = moviePlayer.backgroundView.frame;
+        imageView.bounds = _moviePlayer.backgroundView.bounds;
+        imageView.frame = _moviePlayer.backgroundView.frame;
     }
 }
 
@@ -175,15 +178,15 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
     if ([imageScaleType isEqualToString:@"stretch"]){
         // Stretches image to fill all available background space, disregarding aspect ratio
         imageView.contentMode = UIViewContentModeScaleToFill;
-        moviePlayer.backgroundView.contentMode = UIViewContentModeScaleToFill;
+        _moviePlayer.backgroundView.contentMode = UIViewContentModeScaleToFill;
     } else if ([imageScaleType isEqualToString:@"fit"]) {
         // Stretches image to fill all possible space while retaining aspect ratio
         imageView.contentMode = UIViewContentModeScaleAspectFit;
-        moviePlayer.backgroundView.contentMode = UIViewContentModeScaleAspectFit;
+        _moviePlayer.backgroundView.contentMode = UIViewContentModeScaleAspectFit;
     } else {
         // Places image in the center of the screen
         imageView.contentMode = UIViewContentModeCenter;
-        moviePlayer.backgroundView.contentMode = UIViewContentModeCenter;
+        _moviePlayer.backgroundView.contentMode = UIViewContentModeCenter;
     }
     
     [imageView setImage:[self getImage:imagePath]];
@@ -192,23 +195,23 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 -(void)startPlayer:(NSString*)uri {
     NSURL *url = [NSURL URLWithString:uri];
     
-    moviePlayer =  [[MPMoviePlayerController alloc] initWithContentURL:url];
-    [moviePlayer setControlStyle:MPMovieControlStyleFullscreen];
-    [moviePlayer.view setTranslatesAutoresizingMaskIntoConstraints:NO];
+    _moviePlayer =  [[MPMoviePlayerController alloc] initWithContentURL:url];
+    [_moviePlayer setControlStyle:MPMovieControlStyleFullscreen];
+    [_moviePlayer.view setTranslatesAutoresizingMaskIntoConstraints:NO];
     
     // Listen for playback finishing
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(moviePlayBackDidFinish:)
                                                  name:MPMoviePlayerPlaybackDidFinishNotification
-                                               object:moviePlayer];
+                                               object:_moviePlayer];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(moviePlayBackDidFinish:)
                                                  name:MPMoviePlayerDidExitFullscreenNotification
-                                               object:moviePlayer];
+                                               object:_moviePlayer];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(moviePlayBackDidFinish:)
                                                  name:MPMoviePlayerWillExitFullscreenNotification
-                                               object:moviePlayer];
+                                               object:_moviePlayer];
     
     // Listen for orientation change
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -216,19 +219,20 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
                                                  name:UIDeviceOrientationDidChangeNotification
                                                object:nil];
     
-    moviePlayer.shouldAutoplay = YES;
+    _moviePlayer.movieSourceType = MPMovieSourceTypeStreaming;
+    _moviePlayer.shouldAutoplay = YES;
     if (imageView != nil) {
-        [moviePlayer.backgroundView setAutoresizesSubviews:YES];
-        [moviePlayer.backgroundView addSubview:imageView];
+        [_moviePlayer.backgroundView setAutoresizesSubviews:YES];
+        [_moviePlayer.backgroundView addSubview:imageView];
     }
-    moviePlayer.backgroundView.backgroundColor = backgroundColor;
-    [self.viewController.view addSubview:moviePlayer.view];
+    _moviePlayer.backgroundView.backgroundColor = backgroundColor;
+    [self.viewController.view addSubview:_moviePlayer.view];
     
     // Note: animating does a fade to black, which may not match background color
     if (initFullscreen) {
-        [moviePlayer setFullscreen:YES animated:NO];
+        [_moviePlayer setFullscreen:YES animated:NO];
     } else {
-        [moviePlayer setFullscreen:NO animated:NO];
+        [_moviePlayer setFullscreen:NO animated:NO];
     }
 }
 
@@ -273,26 +277,26 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
     // Remove playback finished listener
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:MPMoviePlayerPlaybackDidFinishNotification
-                                                  object:moviePlayer];
+                                                  object:_moviePlayer];
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:MPMoviePlayerDidExitFullscreenNotification
-                                                  object:moviePlayer];
+                                                  object:_moviePlayer];
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:MPMoviePlayerWillExitFullscreenNotification
-                                                  object:moviePlayer];
+                                                  object:_moviePlayer];
     
     // Remove orientation change listener
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:UIDeviceOrientationDidChangeNotification
                                                   object:nil];
     
-    if (moviePlayer != nil) {
-        moviePlayer.fullscreen = NO;
-        [moviePlayer setInitialPlaybackTime:-1];
-        [moviePlayer stop];
-        moviePlayer.controlStyle = MPMovieControlStyleNone;
-        [moviePlayer.view removeFromSuperview];
-        moviePlayer = nil;
+    if (_moviePlayer != nil) {
+        _moviePlayer.fullscreen = NO;
+        [_moviePlayer setInitialPlaybackTime:-1];
+        [_moviePlayer stop];
+        _moviePlayer.controlStyle = MPMovieControlStyleNone;
+        [_moviePlayer.view removeFromSuperview];
+        _moviePlayer = nil;
     }
 }
 @end
