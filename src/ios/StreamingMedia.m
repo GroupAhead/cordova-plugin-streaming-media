@@ -29,23 +29,9 @@ NSString * const TYPE_AUDIO = @"AUDIO";
 NSString * const DEFAULT_IMAGE_SCALE = @"center";
 
 -(void)parseOptions:(NSDictionary *)options type:(NSString *) type {
-    // Common options
-    if (![options isKindOfClass:[NSNull class]] && [options objectForKey:@"shouldAutoClose"]) {
-        shouldAutoClose = [[options objectForKey:@"shouldAutoClose"] boolValue];
-    } else {
-        shouldAutoClose = false;
-    }
-    if (![options isKindOfClass:[NSNull class]] && [options objectForKey:@"bgColor"]) {
-        [self setBackgroundColor:[options objectForKey:@"bgColor"]];
-    } else {
-        backgroundColor = [UIColor blackColor];
-    }
-    
-    if (![options isKindOfClass:[NSNull class]] && [options objectForKey:@"initFullscreen"]) {
-        initFullscreen = [[options objectForKey:@"initFullscreen"] boolValue];
-    } else {
-        initFullscreen = true;
-    }
+    shouldAutoClose = false;
+    backgroundColor = [UIColor blackColor];
+    initFullscreen = true;
     
     if ([type isEqualToString:TYPE_AUDIO]) {
         // bgImage
