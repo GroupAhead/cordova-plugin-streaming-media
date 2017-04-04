@@ -163,12 +163,19 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
     
     AVPlayer *player = [AVPlayer playerWithURL:url];
     moviePlayer.player = player;
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerFinished:) name:AVPlayerItemDidPlayToEndTimeNotification object:player.currentItem];
 
     [moviePlayer.view setTranslatesAutoresizingMaskIntoConstraints:YES];
     
     [moviePlayer.player play];
     moviePlayer.modalPresentationStyle = UIModalPresentationFullScreen;
     [self.viewController presentViewController:moviePlayer animated:YES completion:nil];
+}
+
+-(void)playerFinished:(NSNotification *)notification {
+    [moviePlayer.player pause];
+    [moviePlayer.player.currentItem seekToTime:kCMTimeZero];
 }
 
 @end
