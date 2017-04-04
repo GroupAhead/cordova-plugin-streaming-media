@@ -1,6 +1,10 @@
 #import "StreamingMedia.h"
 #import <Cordova/CDV.h>
 
+#import <AVFoundation/AVFoundation.h>
+#import <AVKit/AVKit.h>
+
+
 @interface StreamingMedia()
 - (void)parseOptions:(NSDictionary *) options type:(NSString *) type;
 - (void)play:(CDVInvokedUrlCommand *) command type:(NSString *) type;
@@ -8,8 +12,6 @@
 - (void)setImage:(NSString*)imagePath withScaleType:(NSString*)imageScaleType;
 - (UIImage*)getImage: (NSString *)imageName;
 - (void)startPlayer:(NSString*)uri;
-- (void)moviePlayBackDidFinish:(NSNotification*)notification;
-- (void)cleanup;
 @end
 
 @implementation StreamingMedia {
@@ -18,7 +20,7 @@
     UIColor *backgroundColor;
     UIImageView *imageView;
     BOOL initFullscreen;
-    MPMoviePlayerController *moviePlayer;
+    AVPlayerViewController *moviePlayer;
 }
 
 NSString * const TYPE_VIDEO = @"VIDEO";
@@ -61,21 +63,21 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 -(void)pause:(CDVInvokedUrlCommand *) command type:(NSString *) type {
     callbackId = command.callbackId;
     if (moviePlayer) {
-        [moviePlayer pause];
+        [moviePlayer.player pause];
     }
 }
 
 -(void)resume:(CDVInvokedUrlCommand *) command type:(NSString *) type {
     callbackId = command.callbackId;
     if (moviePlayer) {
-        [moviePlayer play];
+        [moviePlayer.player play];
     }
 }
 
 -(void)stop:(CDVInvokedUrlCommand *) command type:(NSString *) type {
     callbackId = command.callbackId;
     if (moviePlayer) {
-        [moviePlayer stop];
+        [moviePlayer.player setRate:0];
     }
 }
 
@@ -144,32 +146,11 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
     return image;
 }
 
-- (void)orientationChanged:(NSNotification *)notification {
-    if (imageView != nil) {
-        // adjust imageView for rotation
-        imageView.bounds = moviePlayer.backgroundView.bounds;
-        imageView.frame = moviePlayer.backgroundView.frame;
-    }
-}
-
 -(void)setImage:(NSString*)imagePath withScaleType:(NSString*)imageScaleType {
     imageView = [[UIImageView alloc] initWithFrame:self.viewController.view.bounds];
     if (imageScaleType == nil) {
         NSLog(@"imagescaletype was NIL");
         imageScaleType = DEFAULT_IMAGE_SCALE;
-    }
-    if ([imageScaleType isEqualToString:@"stretch"]){
-        // Stretches image to fill all available background space, disregarding aspect ratio
-        imageView.contentMode = UIViewContentModeScaleToFill;
-        moviePlayer.backgroundView.contentMode = UIViewContentModeScaleToFill;
-    } else if ([imageScaleType isEqualToString:@"fit"]) {
-        // Stretches image to fill all possible space while retaining aspect ratio
-        imageView.contentMode = UIViewContentModeScaleAspectFit;
-        moviePlayer.backgroundView.contentMode = UIViewContentModeScaleAspectFit;
-    } else {
-        // Places image in the center of the screen
-        imageView.contentMode = UIViewContentModeCenter;
-        moviePlayer.backgroundView.contentMode = UIViewContentModeCenter;
     }
     
     [imageView setImage:[self getImage:imagePath]];
@@ -178,108 +159,16 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
 -(void)startPlayer:(NSString*)uri {
     NSURL *url = [NSURL URLWithString:uri];
     
-    moviePlayer =  [[MPMoviePlayerController alloc] initWithContentURL:url];
-    [moviePlayer setControlStyle:MPMovieControlStyleFullscreen];
-    [moviePlayer.view setTranslatesAutoresizingMaskIntoConstraints:NO];
+    moviePlayer =  [AVPlayerViewController new];
     
-    // Listen for playback finishing
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(moviePlayBackDidFinish:)
-                                                 name:MPMoviePlayerPlaybackDidFinishNotification
-                                               object:moviePlayer];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(moviePlayBackDidFinish:)
-                                                 name:MPMoviePlayerDidExitFullscreenNotification
-                                               object:moviePlayer];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(moviePlayBackDidFinish:)
-                                                 name:MPMoviePlayerWillExitFullscreenNotification
-                                               object:moviePlayer];
+    AVPlayer *player = [AVPlayer playerWithURL:url];
+    moviePlayer.player = player;
+
+    [moviePlayer.view setTranslatesAutoresizingMaskIntoConstraints:YES];
     
-    // Listen for orientation change
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(orientationChanged:)
-                                                 name:UIDeviceOrientationDidChangeNotification
-                                               object:nil];
-    
-    moviePlayer.movieSourceType = MPMovieSourceTypeStreaming;
-    moviePlayer.shouldAutoplay = YES;
-    if (imageView != nil) {
-        [moviePlayer.backgroundView setAutoresizesSubviews:YES];
-        [moviePlayer.backgroundView addSubview:imageView];
-    }
-    moviePlayer.backgroundView.backgroundColor = backgroundColor;
-    [self.viewController.view addSubview:moviePlayer.view];
-    
-    // Note: animating does a fade to black, which may not match background color
-    if (initFullscreen) {
-        [moviePlayer setFullscreen:YES animated:NO];
-    } else {
-        [moviePlayer setFullscreen:NO animated:NO];
-    }
+    [moviePlayer.player play];
+    moviePlayer.modalPresentationStyle = UIModalPresentationFullScreen;
+    [self.viewController presentViewController:moviePlayer animated:YES completion:nil];
 }
 
-- (void) moviePlayBackDidFinish:(NSNotification*)notification {
-    NSDictionary *notificationUserInfo = [notification userInfo];
-    NSNumber *resultValue = [notificationUserInfo objectForKey:MPMoviePlayerPlaybackDidFinishReasonUserInfoKey];
-    MPMovieFinishReason reason = [resultValue intValue];
-    NSString *errorMsg;
-    if (reason == MPMovieFinishReasonPlaybackError) {
-        NSError *mediaPlayerError = [notificationUserInfo objectForKey:@"error"];
-        if (mediaPlayerError) {
-            errorMsg = [mediaPlayerError localizedDescription];
-        } else {
-            errorMsg = @"Unknown error.";
-        }
-        NSLog(@"Playback failed: %@", errorMsg);
-    }
-    
-    if (shouldAutoClose || [errorMsg length] != 0) {
-        [self cleanup];
-        CDVPluginResult* pluginResult;
-        if ([errorMsg length] != 0) {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMsg];
-        } else {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
-        }
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
-    }
-}
-
-- (void)cleanup {
-    NSLog(@"Clean up");
-    imageView = nil;
-    initFullscreen = false;
-    backgroundColor = nil;
-    
-    // Remove Done Button listener
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:MPMoviePlayerWillExitFullscreenNotification
-                                                  object:nil];
-    
-    // Remove playback finished listener
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:MPMoviePlayerPlaybackDidFinishNotification
-                                                  object:moviePlayer];
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:MPMoviePlayerDidExitFullscreenNotification
-                                                  object:moviePlayer];
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:MPMoviePlayerWillExitFullscreenNotification
-                                                  object:moviePlayer];
-    
-    // Remove orientation change listener
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:UIDeviceOrientationDidChangeNotification
-                                                  object:nil];
-    
-    if (moviePlayer != nil) {
-        moviePlayer.fullscreen = NO;
-        [moviePlayer setInitialPlaybackTime:-1];
-        [moviePlayer stop];
-        moviePlayer.controlStyle = MPMovieControlStyleNone;
-        [moviePlayer.view removeFromSuperview];
-        moviePlayer = nil;
-    }
-}
 @end
