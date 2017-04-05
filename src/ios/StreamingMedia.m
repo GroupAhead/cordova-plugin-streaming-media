@@ -17,7 +17,6 @@
 
 NSString * const TYPE_VIDEO = @"VIDEO";
 NSString * const TYPE_AUDIO = @"AUDIO";
-NSString * const DEFAULT_IMAGE_SCALE = @"center";
 
 -(void)play:(CDVInvokedUrlCommand *) command type:(NSString *) type {
     callbackId = command.callbackId;
@@ -66,23 +65,31 @@ NSString * const DEFAULT_IMAGE_SCALE = @"center";
     [self stop:command type:[NSString stringWithString:TYPE_AUDIO]];
 }
 
+// Start the player
 -(void)startPlayer:(NSString*)uri {
     NSURL *url = [NSURL URLWithString:uri];
     
     moviePlayer =  [AVPlayerViewController new];
     
+    // Add the player to the ViewController
     AVPlayer *player = [AVPlayer playerWithURL:url];
     moviePlayer.player = player;
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerFinished:) name:AVPlayerItemDidPlayToEndTimeNotification object:player.currentItem];
+    // Add notification for when the video is done playing
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(playerFinished:)
+                                                 name:AVPlayerItemDidPlayToEndTimeNotification
+                                               object:player.currentItem];
 
     [moviePlayer.view setTranslatesAutoresizingMaskIntoConstraints:YES];
     
+    // Show the player and start playing video immediately
     [moviePlayer.player play];
     moviePlayer.modalPresentationStyle = UIModalPresentationFullScreen;
     [self.viewController presentViewController:moviePlayer animated:YES completion:nil];
 }
 
+// When player is done playing, move seekbar to beginning and pause video
 -(void)playerFinished:(NSNotification *)notification {
     [moviePlayer.player pause];
     [moviePlayer.player.currentItem seekToTime:kCMTimeZero];
